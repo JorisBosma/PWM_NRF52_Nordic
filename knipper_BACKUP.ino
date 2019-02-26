@@ -1,4 +1,6 @@
 #include <NRF.h>
+#include <SPI.h>
+#include <BLEPeripheral.h>
 
 #define TRIG_PIN 2
 #define PWM_PIN 3
@@ -314,6 +316,14 @@ void nrf_pwm_mode_set(NRF_PWM_Type * NRF_PWMx, nrf_pwm_mode_t mode)
     NRF_PWMx->SEQ[seq].ENDDELAY = enddelay;
 }
 
+/*Bonding(pairing) handler*/
+void blePeripheralBondedHandler(BLECentral& central) {
+  // central bonded event handler
+  Serial.print(F("Remote bonded event, central: "));
+  Serial.println(central.address());
+
+}
+
   uint32_t duty_cycle = 0;
   int32_t  duty_cycle_inc = 1;
   uint16_t pwm_seq[4];
@@ -322,20 +332,25 @@ void nrf_pwm_mode_set(NRF_PWM_Type * NRF_PWMx, nrf_pwm_mode_t mode)
   int inc = 1;
   unsigned int stepcnt = 0;
 
-  uint16_t table_1[][(SERVOS+1)]{ {50, 40, 100, 100, DELAY}, {52, 40, 100, 100, DELAY}, {52, 40, 100, 100, DELAY}, {52, 40, 100, 100, DELAY}, {54, 40, 100, 100, DELAY}, {56, 40, 100, 100, DELAY}, {58, 40, 100, 100, DELAY}, {60, 40, 100, 100, DELAY}, {62, 40, 100, 100, DELAY}, {64, 40, 100, 100, DELAY}, {66, 40, 100, 100, DELAY}, {68, 40, 100, 100, DELAY}, {70, 40, 100, 100, DELAY}, {72, 40, 100, 100, DELAY}, {74, 40, 100, 100, DELAY}, {76, 40, 100, 100, DELAY}, {78, 40, 100, 100, DELAY}, {80, 40, 100, 100, DELAY},
-                                  {82, 40, 100, 100, DELAY}, {84, 40, 100, 100, DELAY}, {86, 40, 100, 100, DELAY}, {88, 40, 100, 100, DELAY}, {90, 40, 100, 100, DELAY}/*23 beak is closed*/,     {90, 40, 98, 98, DELAY}, {90, 40, 96, 96, DELAY}, {90, 40, 94, 94, DELAY}, {90, 40, 92, 92, DELAY}, {90, 40, 90, 90, DELAY}, {90, 40, 88, 88, DELAY}, {90, 40, 86, 86, DELAY}, {90, 40, 84, 84, DELAY}, {90, 40, 82, 82, DELAY}, {90, 40, 80, 80, DELAY}, {90, 40, 78, 78, DELAY}, {90, 40, 76, 76, DELAY},
-                                  {90, 40, 74, 74, DELAY}, {90, 40, 72, 72, DELAY}, {90, 40, 70, 70, DELAY}, {90, 40, 68, 68, DELAY}, {90, 40, 66, 66, DELAY}, {90, 40, 64, 64, DELAY}, {90, 40, 62, 62, DELAY}, {90, 40, 60, 60, DELAY}, {90, 40, 58, 58, DELAY}, {90, 40, 56, 56, DELAY}, {90, 40, 54, 54, DELAY}, {90, 40, 52, 52, DELAY}, {90, 40, 50, 50, DELAY}, {90, 40, 48, 48, DELAY}, {90, 40, 46, 46, DELAY}, {90, 40, 44, 44, DELAY}, {90, 40, 42, 42, DELAY}, {90, 40, 40, 40, DELAY}, {90, 40, 38, 38, DELAY}/*arm should be at box right now*/,
-                                  {88, 40, 38, 38, DELAY}, {86, 40, 38, 38, DELAY}, {84, 40, 38, 38, DELAY}, {82, 40, 38, 38, DELAY}, {80, 40, 38, 38, DELAY}, {78, 40, 38, 38, DELAY}, {76, 40, 38, 38, DELAY}, {74, 40, 38, 38, DELAY}, {72, 40, 38, 38, DELAY}, {70, 40, 38, 38, DELAY}, {68, 40, 38, 38, DELAY}, {66, 40, 38, 38, DELAY}, {64, 40, 38, 38, DELAY}, {62, 40, 38, 38, DELAY}, {60, 40, 38, 38, DELAY}, {58, 40, 38, 38, DELAY}, {56, 40, 38, 38, DELAY}, {54, 40, 38, 38, DELAY}, {52, 40, 38, 38, DELAY}, {50, 40, 38, 38, DELAY}/*Beak is open again*/};
+  uint16_t table_1[][(SERVOS+1)]{ {50, 40, 100, 100, DELAY}, {52, 40, 100, 100, DELAY}, {54, 40, 100, 100, DELAY}, {56, 40, 100, 100, DELAY}, {58, 40, 100, 100, DELAY}, {60, 40, 100, 100, DELAY}, {62, 40, 100, 100, DELAY}, {64, 40, 100, 100, DELAY}, {66, 40, 100, 100, DELAY}, {68, 40, 100, 100, DELAY}, {70, 40, 100, 100, DELAY}, {72, 40, 100, 100, DELAY}, {74, 40, 100, 100, DELAY}, {76, 40, 100, 100, DELAY}, {78, 40, 100, 100, DELAY}, {80, 40, 100, 100, DELAY},
+                                  {82, 40, 100, 100, DELAY}, {84, 40, 100, 100, DELAY}, {86, 40, 100, 100, DELAY}, {88, 40, 100, 100, DELAY}, {90, 40, 100, 100, DELAY}, {92, 40, 100, 100, DELAY}, {94, 40, 100, 100, DELAY}, {96, 40, 100, 100, DELAY}, {98, 40, 100, 100, DELAY}, {100, 40, 98, 98, DELAY}, {100, 40, 96, 96, DELAY}, {100, 40, 94, 94, DELAY}, {100, 40, 92, 92, DELAY}, {100, 40, 90, 90, DELAY}, {100, 40, 88, 88, DELAY}, {100, 40, 86, 86, DELAY}, {100, 40, 84, 84, DELAY}, {100, 40, 82, 82, DELAY}, {100, 40, 80, 80, DELAY}, {100, 40, 78, 78, DELAY}, {100, 40, 76, 76, DELAY},
+                                  {100, 40, 74, 74, DELAY}, {100, 40, 72, 72, DELAY}, {100, 40, 70, 70, DELAY}, {100, 40, 68, 68, DELAY}, {100, 40, 66, 66, DELAY}, {100, 40, 64, 64, DELAY}, {100, 40, 62, 62, DELAY}, {100, 40, 60, 60, DELAY}, {100, 40, 58, 58, DELAY}, {100, 40, 56, 56, DELAY}, {100, 40, 54, 54, DELAY}, {100, 40, 52, 52, DELAY}, {100, 40, 50, 50, DELAY}, {100, 40, 48, 48, DELAY}, {100, 40, 46, 46, DELAY}, {100, 40, 44, 44, DELAY}, {100, 40, 42, 44, DELAY}, {100, 40, 40, 44, DELAY}, {100, 40, 38, 44, DELAY}/*arm should be at box right now*/,
+                                  {88, 40, 38, 44, DELAY}, {86, 40, 38, 44, DELAY}, {84, 40, 38, 44, DELAY}, {82, 40, 38, 44, DELAY}, {80, 40, 38, 44, DELAY}, {78, 40, 38, 44, DELAY}, {76, 40, 38, 44, DELAY}, {74, 40, 38, 44, DELAY}, {72, 40, 38, 44, DELAY}, {70, 40, 38, 44, DELAY}, {68, 40, 38, 44, DELAY}, {66, 40, 38, 44, DELAY}, {64, 40, 38, 44, DELAY}, {62, 40, 38, 44, DELAY}, {60, 40, 38, 44, DELAY}, {58, 40, 38, 44, DELAY}, {56, 40, 38, 44, DELAY}, {54, 40, 38, 44, DELAY}, {52, 40, 38, 44, DELAY}, {50, 40, 38, 44, DELAY}/*Beak is open again*/};
 
-
+  const char * localName = "nRF52832 TRIG";
+  BLEPeripheral blePeriph;
+  BLEService bleServ("1207");
+  BLECharCharacteristic trigChar("1207", BLEWrite);
+  BLEBondStore BondStore();
+  int State = 0;
   
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(PWM_PIN, OUTPUT);
   pinMode(PWM_PIN2, OUTPUT);
   
-
+  setupBLE();
 
   //PWM 0 SETUP-----------------------------------------------------------------------------------------------
     nrf_pwm_pselout_set(NRF_PWM0, NRF_PWM_CHANNEL0, PWM_PIN);
@@ -360,14 +375,16 @@ void setup() {
 }
 void loop() {
 
-  /*delay(1);
+  /*
+    ----------------------------------THIS IS ALL OLD BUT USEFULL CODE----------------------------------
+     delay(1);
   digitalWrite(PWM_PIN, LOW);
   delay(20);
-  digitalWrite(PWM_PIN, HIGH);*/
+  digitalWrite(PWM_PIN, HIGH);
 
-          //  pwm_seq = ((uint16_t) ((PWM_COUNTER_TOP*duty_cycle)/100)); // pwm_seq is read by the PWM
-            // when task SEQSTARTx is triggered
-          /*  i = i+inc;
+           pwm_seq = ((uint16_t) ((PWM_COUNTER_TOP*duty_cycle)/100)); // pwm_seq is read by the PWM
+            when task SEQSTARTx is triggered
+            i = i+inc;                     
             setPWM3(i);
              if(i == 100){
               inc = -1;
@@ -381,8 +398,8 @@ void loop() {
             }
             delay(50);
             setPWM5
-            nrf_pwm_task_trigger(NRF_PWM0, NRF_PWM_TASK_SEQSTART0);*/
-            if(stepcnt == 0){
+            nrf_pwm_task_trigger(NRF_PWM0, NRF_PWM_TASK_SEQSTART0);
+           if(stepcnt == 0){
             inc = 1;
             delay(1000);
             }
@@ -398,8 +415,38 @@ void loop() {
             PWM_SetAll(Pos1, Pos2, Pos3, Pos4);
             stepcnt += inc;
             delay(table_1[stepcnt][4]);
+            ----------------------------------------------------------------------------------------------------------*/
+  blePeriph.poll();
+  if(trigChar.written()){
+    State = trigChar.value();
+    if(State){
+     OpenClose();;
+    }
+  }
            
           
+}
+
+void OpenClose(){ //In this context OPEN == 1 if it is ready to accept a card, OPEN == 0(closed) when it is at the box
+  nrf_pwm_enable(NRF_PWM0);      
+    for(stepcnt; stepcnt<76; stepcnt++){
+    unsigned int Pos1 = table_1[stepcnt][0];
+    unsigned int Pos2 = table_1[stepcnt][1];
+    unsigned int Pos3 = table_1[stepcnt][2];
+    unsigned int Pos4 = table_1[stepcnt][3];
+    PWM_SetAll(Pos1, Pos2, Pos3, Pos4);
+    delay(table_1[stepcnt][4]);
+    }
+    for(stepcnt; stepcnt>0; stepcnt--){
+    unsigned int Pos1 = table_1[stepcnt][0];
+    unsigned int Pos2 = table_1[stepcnt][1];
+    unsigned int Pos3 = table_1[stepcnt][2];
+    unsigned int Pos4 = table_1[stepcnt][3];
+    PWM_SetAll(Pos1, Pos2, Pos3, Pos4);
+    delay(table_1[stepcnt][4]);
+    }
+  State = 0;
+  nrf_pwm_disable(NRF_PWM0);
 }
 
 
@@ -416,7 +463,7 @@ void PWM_SetAll(unsigned int PWM1, unsigned int PWM2, unsigned int PWM3, unsigne
 //This function controls if the beak is open or closed
 void setPWM1(unsigned int percentage){ 
   if(percentage < 50){percentage = 50;} //50 is (mostly) open, you can probably change this to 30 or 40
-  if(percentage > 90){percentage = 90;} //90 is fully closed, there is no need to go further
+  if(percentage > 100){percentage = 100;} //90 is fully closed, there is no need to go further
   uint16_t result =  PWM_COUNTER_TOP - (PWM_MIN+(percentage * STAP_GROOTE));
   pwm_seq[0] = result;
   
@@ -445,10 +492,32 @@ void setPWM3(unsigned int percentage){
 
 //This function controls the lowest Hinge
 void setPWM4(unsigned int percentage){
-  if(percentage < 1){percentage = 1;}//unknown
-  if(percentage > 100){percentage = 100;}//unknown
+  if(percentage < 40){percentage = 40;}//value of 40 is towards the box
+  if(percentage > 100){percentage = 100;}//100 is max and there is no need to go further
   uint16_t result =  PWM_COUNTER_TOP - (PWM_MIN+(percentage * STAP_GROOTE));
   pwm_seq[3] = result;
   
   return;
+}
+
+void setupBLE()
+{
+  // Advertise name and service:
+  blePeriph.setDeviceName(localName);
+  blePeriph.setLocalName(localName);
+  blePeriph.setAdvertisedServiceUuid(bleServ.uuid());
+
+  // Add service
+  blePeriph.addAttribute(bleServ);
+
+  // Add characteristic
+  blePeriph.addAttribute(trigChar);
+
+  blePeriph.setBondStore(BondStore);
+  // Now that device6, service, characteristic are set up,
+  // initialize BLE:
+  blePeriph.begin();
+
+  // Set characteristic to default value:
+  trigChar.setValue(0);
 }
